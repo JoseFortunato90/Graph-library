@@ -1,5 +1,6 @@
 import numpy as np
 from collections import deque
+import heapq
 
 class Grafo:
     
@@ -10,7 +11,7 @@ class Grafo:
         if representacao == 'lista':
             self.adj = [[] for _ in range(num_vertices)]
         elif representacao == 'matriz':
-            self.adj = np.zeros((num_vertices, num_vertices), dtype=float)
+            self.adj = np.zeros((num_vertices, num_vertices), dtype=int)
         else:
              raise ValueError("Representação inválida. Use 'lista' ou 'matriz'.")
             
@@ -26,23 +27,18 @@ class Grafo:
             self.adj[j,i] = peso
 
     def get_arestas(self):
-
         arestas = []
-
         if self.representacao == 'lista':
             for u, vizinhos_de_u in enumerate(self.adj):
                 for vizinho_info in vizinhos_de_u:
                     v = vizinho_info[0]
-                    if u <= v:
-                        arestas.append([u, v, vizinho_info[1]])
-
+                    peso_uv = vizinho_info[1]
+                    arestas.append([u, v, peso_uv])
         elif self.representacao == 'matriz':
-            for i in range(self.num_vertices):
-                for j in range(i+1,self.num_vertices):
-                    if self.adj[i,j] != 0:
-                        arestas.append([i,j, self.adj[i,j]])
-
-
+            for u in range(self.num_vertices):
+                for v in range(self.num_vertices):
+                    if self.adj[u, v] != 0:
+                        arestas.append([u, v, self.adj[u, v]])
         return arestas
     
     def num_vertices(self):
@@ -72,12 +68,12 @@ class Grafo:
 
         if self.representacao == 'lista':
             for vizinho in self.adj[v]:
-                vizinhos.append(vizinho[0])
+                vizinhos.append([vizinho[0], vizinho[1]])
 
         elif self.representacao == 'matriz':
             for j in range(self.num_vertices):
                 if self.adj[v, j] != 0:
-                    vizinhos.append(j)
+                    vizinhos.append([j, self.adj[v,j]])
         
         return vizinhos
     
@@ -171,7 +167,7 @@ class Grafo:
         d[v] = 0
 
         arestas = self.get_arestas()
-        for i in range(self.num_vertices-1):
+        for _ in range(self.num_vertices-1):
             for aresta in arestas:
                 if d[aresta[1]] > d[aresta[0]] + aresta[2]:
                     d[aresta[1]] = d[aresta[0]] + aresta[2]
@@ -179,23 +175,50 @@ class Grafo:
          
        
         for aresta in arestas:
-            if d[aresta[1]] > d[aresta[0]] + aresta[2]:
+            if d[aresta[1]] > d[aresta[0]] + aresta[2] and d[aresta[0]] != float('inf'):
                 return "Existem ciclos negativos"
                 
         return d, pi
+    
+    def djikstra(self,v):
+        d = [float('inf')] * self.num_vertices
+        pi = [-1] * self.num_vertices
+        d[v] = 0
+        Q = []
 
+        
+        heapq.heappush(Q, (0, v))
+
+        while Q:
+            print(Q)
+            dist_u, u = heapq.heappop(Q)
+
+            if dist_u > d[u]:
+                continue
+
+            for aresta in self.viz(u):
+                if  d[aresta[0]] > d[u] + aresta[1]:
+                    d[aresta[0]] = d[u] + aresta[1]
+                    pi[aresta[0]] = u
+                    heapq.heappush(Q, (d[aresta[0]], aresta[0]))
+       
+
+        return d, pi
 
 
         
-       
-                    
-
-g = Grafo(3, representacao='matriz')
-g.add_aresta(0, 1, -4) 
-g.add_aresta(0, 2, -2)
-g.add_aresta(1, 2, -4) 
+            
+g = Grafo(5, representacao='lista')
+g.add_aresta(0, 1, 10)
+g.add_aresta(0, 2, 3)
+g.add_aresta(1, 2, 1)
+g.add_aresta(1, 3, 2)
+g.add_aresta(2, 1, 4) # Aresta direcionada de 2 para 1
+g.add_aresta(2, 3, 8)
+g.add_aresta(2, 4, 2)
+g.add_aresta(3, 4, 5)
 tempo = [(0, 0)] * g.num_vertices
 visitados = [float('inf')] * g.num_vertices
-print(g.bf(0))
+print(g.djikstra(0))
 
 
